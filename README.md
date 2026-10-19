@@ -2,9 +2,9 @@
 
 [![协议测试](https://github.com/TheSatchel/rsagi-harness-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/TheSatchel/rsagi-harness-starter/actions/workflows/ci.yml)
 
-面向高中生与高校学生团队的 Minecraft 具身智能比赛接入框架：API 协议、Python SDK、最小 Harness、两队模拟服务端和合同测试。
+面向高中生与高校学生团队的 Minecraft 具身智能比赛接入框架：API 协议、Python SDK、可恢复的最小 Harness、单 Harness 预检和合同测试。
 
-**当前版本：v0.1.0 协议原型。** 可以在本地开发、验证 Harness 接入逻辑；尚未连接真实 Minecraft、玩家图像/声音或真实模型。没有对外上线的正式比赛 API，不具备正式开赛条件。
+**当前版本：v0.2.0 协议原型。** 可以在本地开发、验证 Harness 接入逻辑；尚未连接真实 Minecraft、玩家图像/声音或真实模型。当前验收范围收敛为一份真实 Harness 的最终配置试跑，不要求八队压测；算法、记忆和自修改合规由主办方人工审核。
 
 ## 一条命令运行
 
@@ -18,11 +18,13 @@ python3 sdk/examples/demo.py
 
 Windows 可以用 `py -3` 替换 `python3`。也可以从 [Releases](https://github.com/TheSatchel/rsagi-harness-starter/releases) 下载 ZIP，解压后运行相同命令。
 
-演示会启动仅监听回环地址的临时 HTTP 模拟服务，让两个独立 SDK 客户端完成：
+演示会启动仅监听回环地址的临时 HTTP 模拟服务，让一份 Harness 完成：
 
 - 12 轮全队屏障、60 个**模拟** tick；
 - 额度积攒、调用前扣除，以及重复请求只产生一次副作用；
-- 10 次合成模型操作、2 次模拟模型提出的 Harness 配置调整。
+- 5 次合成模型操作、1 次模拟模型提出的 Harness 配置调整。
+
+可选 `python3 sdk/examples/demo.py --teams 2` 用于小型屏障回归，不是当前交付的规模要求。
 
 输出应注明 `protocol_mock`，并包含：
 
@@ -39,8 +41,8 @@ Windows 可以用 `py -3` 替换 `python3`。也可以从 [Releases](https://git
 
 ## 从哪里开始改
 
-1. 阅读 [接入指南](docs/HARNESS_API.md)，了解观察引用、模型调用、动作票据与同步屏障。
-2. 从 [最小 Harness](sdk/examples/baseline.py) 修改自己的控制结构。它只保留轮次、配额和不透明句柄，不建立世界笔记。
+1. 先读 [队伍接入规范](docs/TEAM_INTEGRATION.md)，按启动配置、状态恢复与错误处置编写，再看 [API 指南](docs/HARNESS_API.md)。
+2. 从 [最小 Harness](sdk/examples/baseline.py) 修改自己的控制结构。`run_harness()` 处理重试与轮次恢复，只保留轮次、配额和不透明句柄，不建立世界笔记。
 3. 运行 `python3 scripts/verify_harness_api.py` 检查合同兼容性。
 4. 使用其他语言或框架时，按 [OpenAPI 协议](api/openapi.json) 对接相同 HTTP 接口。
 
@@ -50,7 +52,9 @@ SDK 也可选用可编辑安装：
 python3 -m pip install -e sdk
 ```
 
-`CompetitionClient.from_env()` 使用未来由主办方分发的 `RSAGI_API_URL` 和 `RSAGI_TEAM_TOKEN`。本仓库不分发生产凭据；本地演示自动在内存中生成 Mock 凭据，不需要手动配置。
+`CompetitionClient.from_env()` 使用主办方分发的 `RSAGI_API_URL`、`RSAGI_TEAM_TOKEN`、`RSAGI_MATCH_ID`，锁定同一局比赛。当前没有上线的真实 API；本地演示自动在内存中生成 Mock 配置，不需要手动填凭据。源码提交示例为 [submission.json](sdk/examples/submission.json)。
+
+v0.2 对传输失败默认重试两次，但保留同一比赛标识、请求体和幂等键；控制器重新启动后按服务端 OPEN/PENDING/DECIDED/READY 状态恢复，不会再调用一次已有模型操作。比赛 ID 改变时明确停止，不自动切到新局。
 
 ## 协议边界
 
@@ -79,9 +83,9 @@ python3 -m pip install -e sdk
 
 ## 当前支持与后续工作
 
-支持：认证与队伍隔离的协议模拟、额度积攒、幂等请求、五 tick 屏障、低层输入 schema，以及有来源的角色/预算配置调整。
+支持：认证与队伍隔离的协议模拟、额度积攒、幂等请求、传输失败重试、控制进程恢复、比赛 ID 锁定、五 tick 屏障、低层输入 schema，以及有来源的角色/预算配置调整。
 
-尚未提供：真实感知和完整原生动作执行、在线训练地址、任意源码热更新、参赛进程/存储隔离、生成 token 硬封顶、八队 20 TPS 与真实生存验收。配置自组织示例不是这些能力的认证。
+尚未提供真实感知、完整原生动作执行和在线训练地址，因此仍需最终配置下一份真实 Harness 的游戏试跑。审核参赛算法、存储和自修改由主办方负责；平台不以自动源码合规证明或八队压测作为当前前置。配置自组织示例不等于任意源码热更新实现。
 
 参赛 Harness 最终需要向主办方提交完整源码及运行中修订，并授权赛后公开到赛事 GitHub。这个 Starter 的 MIT 许可证与赛事报名时的源码授权要求分别适用；报名细则以之后公布的正式规程为准。
 
@@ -93,7 +97,7 @@ python3 scripts/verify_harness_api.py
 python3 scripts/package_harness_sdk.py
 ```
 
-当前有 17 项接入测试。测试只使用本机回环 HTTP，禁止外部模型请求或启动 Minecraft。自动测试覆盖 Python 3.9 和 3.12；测试报告和下载包在本地生成。
+当前有 30 项接入测试，包括回包丢失、控制器重启、跨比赛拒绝和停赛后迟到回复。测试只使用本机回环 HTTP，禁止外部模型请求或启动 Minecraft。自动测试覆盖 Python 3.9 和 3.12；测试报告和下载包在本地生成。
 
 协议问题或接入建议请通过 [Issues](https://github.com/TheSatchel/rsagi-harness-starter/issues) 提交，贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 

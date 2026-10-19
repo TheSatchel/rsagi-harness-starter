@@ -16,43 +16,61 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self,*args,**kwargs):return None
 
 class CompetitionClient:
-    def __init__(self,base_url,team_token,*,allow_mock=False,timeout=5):
+    def __init__(self,base_url,team_token,*,allow_mock=False,timeout=5,transport_retries=2,expected_match_id=None):
         parsed=urllib.parse.urlsplit(base_url)
         local=parsed.hostname in ('127.0.0.1','localhost','::1')
         if parsed.scheme not in ('http','https') or (parsed.scheme=='http' and not local) or parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.path not in ('','/'):
             raise ValueError('Use an HTTPS API origin; HTTP is only allowed on loopback')
         if not isinstance(team_token,str) or not team_token or any(c in team_token for c in '\r\n'):
             raise ValueError('Missing or invalid team credential')
+        if type(transport_retries) is not int or not 0<=transport_retries<=5:
+            raise ValueError('transport_retries must be an integer from 0 to 5')
+        if expected_match_id is not None and (not isinstance(expected_match_id,str) or not expected_match_id or not expected_match_id.replace('_','').replace('-','').isalnum()):
+            raise ValueError('Invalid expected_match_id')
         self.base_url=base_url.rstrip('/');self._token=team_token;self.allow_mock=allow_mock;self.timeout=timeout
+        self.transport_retries=transport_retries
+        self.expected_match_id=expected_match_id
         self._opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),_NoRedirect());self._session=None
 
     @classmethod
     def from_env(cls):
-        return cls(os.environ['RSAGI_API_URL'],os.environ['RSAGI_TEAM_TOKEN'],allow_mock=os.environ.get('RSAGI_ALLOW_PROTOCOL_MOCK')=='1')
+        missing=[key for key in ('RSAGI_API_URL','RSAGI_TEAM_TOKEN','RSAGI_MATCH_ID') if not os.environ.get(key)]
+        if missing:raise ValueError('Missing match configuration: '+', '.join(missing))
+        return cls(os.environ['RSAGI_API_URL'],os.environ['RSAGI_TEAM_TOKEN'],expected_match_id=os.environ.get('RSAGI_MATCH_ID'),allow_mock=os.environ.get('RSAGI_ALLOW_PROTOCOL_MOCK')=='1')
 
     def _request(self,method,path,body=None,request_id=None):
         if not path.startswith('/v1/') or '?' in path or '#' in path:raise ValueError('Invalid protocol path')
         headers={'Authorization':'Bearer '+self._token,'Accept':'application/json'}
+        if path!='/v1/session':
+            if self._session is None:raise APIError(409,'SESSION_REQUIRED')
+            headers['X-RSAGI-Match']=self._session['match_id']
         data=None
         if method=='POST':
             request_id=request_id or uuid.uuid4().hex
             headers.update({'Content-Type':'application/json','Idempotency-Key':request_id})
             data=json.dumps(body,separators=(',',':'),allow_nan=False).encode()
         req=urllib.request.Request(self.base_url+path,data=data,headers=headers,method=method)
-        try:
-            with self._opener.open(req,timeout=self.timeout) as response:
-                raw=response.read(65537)
-                if len(raw)>65536:raise APIError(502,'RESPONSE_TOO_LARGE')
-                value=json.loads(raw)
-                if type(value) is not dict:raise APIError(502,'INVALID_RESPONSE')
-                return value
-        except urllib.error.HTTPError as ex:
-            if 300<=ex.code<400:raise APIError(ex.code,'REDIRECT_FORBIDDEN') from None
-            try:code=json.loads(ex.read(4096))['error']['code']
-            except (ValueError,KeyError,TypeError):code='INVALID_ERROR_RESPONSE'
-            raise APIError(ex.code,code) from None
-        except (urllib.error.URLError,TimeoutError,OSError):
-            raise TransportUncertain(request_id) from None
+        # Retries replay exactly the prepared URL, body, match and idempotency
+        # key. They never create a second model decision or change the snapshot.
+        for attempt in range(self.transport_retries+1):
+            try:
+                with self._opener.open(req,timeout=self.timeout) as response:
+                    raw=response.read(65537)
+                    if len(raw)>65536:raise APIError(502,'RESPONSE_TOO_LARGE')
+                    try:value=json.loads(raw)
+                    except ValueError:raise APIError(502,'INVALID_RESPONSE') from None
+                    if type(value) is not dict:raise APIError(502,'INVALID_RESPONSE')
+                    return value
+            except urllib.error.HTTPError as ex:
+                try:
+                    if 300<=ex.code<400:raise APIError(ex.code,'REDIRECT_FORBIDDEN') from None
+                    try:code=json.loads(ex.read(4096))['error']['code']
+                    except (ValueError,KeyError,TypeError):code='INVALID_ERROR_RESPONSE'
+                    raise APIError(ex.code,code) from None
+                finally:ex.close()
+            except (urllib.error.URLError,TimeoutError,OSError):
+                if attempt==self.transport_retries:raise TransportUncertain(request_id) from None
+                time.sleep(min(.05*(2**attempt),.25))
 
     def session(self):
         if self._session is None:
@@ -60,6 +78,12 @@ class CompetitionClient:
             if value.get('api_version')!=API_VERSION:raise APIError(409,'UNSUPPORTED_API_VERSION')
             if value.get('mode')=='protocol_mock' and not self.allow_mock:raise APIError(409,'MOCK_REQUIRES_EXPLICIT_OPT_IN')
             if value.get('mode') not in ('protocol_mock','native_training','strict_competition'):raise APIError(409,'UNKNOWN_SERVER_MODE')
+            if type(value.get('match_id')) is not str or not value['match_id']:raise APIError(502,'INVALID_SESSION')
+            if self.expected_match_id is not None and self.expected_match_id!=value['match_id']:raise APIError(409,'MATCH_MISMATCH')
+            if value['mode']!='protocol_mock':
+                if self.expected_match_id is None:raise APIError(409,'MATCH_PIN_REQUIRED')
+                if not all(value.get('capabilities',{}).get(key) is True for key in ('human_view_capture','native_game_execution','real_model')):
+                    raise APIError(409,'SERVICE_CAPABILITY_NOT_READY')
             self._session=value
         return self._session
 

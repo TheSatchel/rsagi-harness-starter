@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rsagi-harness-sdk"
-version = "0.1.0"
+version = "0.2.0"
 description = "RSAGI participant protocol starter; local mock, not a competition runtime"
 requires-python = ">=3.9"
 dependencies = []

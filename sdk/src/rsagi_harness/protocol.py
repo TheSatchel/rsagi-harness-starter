@@ -2,7 +2,7 @@
 from __future__ import annotations
 import math,re
 
-API_VERSION='0.1.0'
+API_VERSION='0.2.0'
 PERCEPTION_POLICY='rsagi-human-player-view-v1'
 KEYS=('forward','back','left','right','jump','sneak','sprint','attack','use','drop')
 ROLES=('observer','reasoner','actor','reviewer')

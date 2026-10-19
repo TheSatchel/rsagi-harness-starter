@@ -1,0 +1,9 @@
+{
+  "manifest_version": 1,
+  "api_version": "0.2.0",
+  "entrypoint": ["python3", "sdk/examples/baseline.py"],
+  "startup_environment": ["RSAGI_API_URL", "RSAGI_TEAM_TOKEN", "RSAGI_MATCH_ID"],
+  "compliance_review": "organizer_manual_review",
+  "source_and_runtime_revisions_shared_with_organizer": true,
+  "post_event_source_publication_permitted": true
+}

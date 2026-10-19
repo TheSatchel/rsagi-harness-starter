@@ -24,6 +24,7 @@ def build():
         'f3_allowed':{'const':True},'screen':obj({'width':{'const':1280},'height':{'const':720}}),'capabilities':ref('Capabilities')}),
       'Round':obj({'mode':mode,'phase':{'enum':['COLLECTING','FINISHED','ABORTED']},'round_id':{'type':'integer','minimum':1},'logical_tick':integer,
         'available_credits':{'type':'integer','minimum':0,'maximum':16},'observation_ref':nullable_id,'harness_revision':identifier,
+        'active_operation_id':nullable_id,
         'recommended_call_credits':{'type':'integer','minimum':1,'maximum':16},'disposition':{'enum':['OPEN','PENDING','DECIDED','READY']},'finished':{'type':'boolean'}}),
       'DecideRequest':obj({'round_id':{'type':'integer','minimum':1},'observation_ref':identifier,'credits':{'type':'integer','minimum':1,'maximum':16},'harness_revision':identifier}),
       'RoundRequest':obj({'round_id':{'type':'integer','minimum':1}}),
@@ -43,6 +44,7 @@ def build():
             value['requestBody']={'required':True,'content':{'application/json':{'schema':ref(request)}}}
             value['parameters']=[{'$ref':'#/components/parameters/IdempotencyKey'}]
         if parameters:value.setdefault('parameters',[]).extend(parameters)
+        if name!='getSession':value.setdefault('parameters',[]).append({'$ref':'#/components/parameters/MatchID'})
         return value
     paths={
       '/v1/session':{'get':operation('getSession','Own team binding and public protocol settings; capability booleans are not certification.','Session')},
@@ -58,7 +60,7 @@ def build():
       'servers':[{'url':'http://127.0.0.1:{port}','description':'Local protocol mock; use its allocated loopback port. No production endpoint advertised.','variables':{'port':{'default':'8000'}}}],
       'security':[{'TeamBearer':[]}],'paths':paths,
       'components':{'securitySchemes':{'TeamBearer':{'type':'http','scheme':'bearer','description':'One opaque credential bound to one match and team, not a Minecraft or model-provider credential.'}},
-        'parameters':{'IdempotencyKey':{'in':'header','name':'Idempotency-Key','required':True,'schema':{'type':'string','pattern':'^[A-Za-z0-9_-]{8,128}$'},'description':'Reuse exactly the same key and body after uncertain transport. A changed body conflicts. Successful records remain for the match.'}},'schemas':schemas},
+        'parameters':{'MatchID':{'in':'header','name':'X-RSAGI-Match','required':True,'schema':identifier,'description':'Bind every request to the session established at startup. Never auto-switch to a restarted/new match.'},'IdempotencyKey':{'in':'header','name':'Idempotency-Key','required':True,'schema':{'type':'string','pattern':'^[A-Za-z0-9_-]{8,128}$'},'description':'Reuse exactly the same key and body after uncertain transport. A changed body conflicts. Successful records remain for the match.'}},'schemas':schemas},
       'x-runtime-status':'protocol_mock_only_not_competition_ready'}
     out=ROOT/'api/openapi.json';out.parent.mkdir(exist_ok=True);out.write_text(json.dumps(spec,ensure_ascii=False,indent=2)+'\n')
     decision={'$schema':'https://json-schema.org/draft/2020-12/schema',**action_schema()}

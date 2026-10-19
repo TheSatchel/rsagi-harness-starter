@@ -30,7 +30,7 @@ class ParticipantAPITests(unittest.TestCase):
         first=self.alpha.round()
         for _ in range(10):self.assertEqual(self.alpha.round(),first)
         self.assertNotEqual(first['observation_ref'],self.beta.round()['observation_ref'])
-        self.assertEqual(set(first),{'mode','phase','round_id','logical_tick','available_credits','observation_ref','harness_revision','recommended_call_credits','disposition','finished'})
+        self.assertEqual(set(first),{'mode','phase','round_id','logical_tick','available_credits','observation_ref','harness_revision','recommended_call_credits','active_operation_id','disposition','finished'})
         self.assertEqual(self.arena.logical_tick,0)
         session=self.alpha.session();self.assertTrue(session['f3_allowed'])
         self.assertFalse(session['capabilities']['human_view_capture'])
@@ -207,7 +207,7 @@ class ParticipantAPITests(unittest.TestCase):
         for raw,content_type,code in [(b'{"round_id":1,"round_id":2}','application/json','DUPLICATE_JSON_FIELD'),
           (b'{}','text/plain','JSON_REQUIRED'),(b'{','application/json','INVALID_JSON'),
           (b'x'*4097,'application/json','BODY_TOO_LARGE')]:
-            req=urllib.request.Request(self.server.url+'/v1/wait',data=raw,headers={'Authorization':'Bearer '+self.arena.tokens['alpha'],'Content-Type':content_type,'Idempotency-Key':'invalid-http-test'})
+            req=urllib.request.Request(self.server.url+'/v1/wait',data=raw,headers={'Authorization':'Bearer '+self.arena.tokens['alpha'],'Content-Type':content_type,'Idempotency-Key':'invalid-http-test','X-RSAGI-Match':self.arena.match_id})
             with self.assertRaises(urllib.error.HTTPError) as error:
                 self.alpha._opener.open(req,timeout=2)
             self.assertEqual(json.loads(error.exception.read())['error']['code'],code)

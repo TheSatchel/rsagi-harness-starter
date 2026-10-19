@@ -23,6 +23,9 @@ def main():
     perception=json.loads((ROOT/'config/perception-policy.json').read_text())
     assert perception['debug_ui']['vanilla_f3_allowed'] is True
     assert perception['structured_world_state_allowed'] is False
+    scope=json.loads((ROOT/'config/delivery-scope.json').read_text())
+    assert scope['required_live_harness_count']==1 and scope['eight_team_load_test_required'] is False
+    assert scope['harness_algorithm_memory_and_self_modification_review']=='organizer_manual_review'
     original_connect=socket.create_connection;outside=[]
     def loopback_only(address,*args,**kwargs):
         if address[0] not in ('127.0.0.1','localhost','::1'):
@@ -35,20 +38,21 @@ def main():
         result=unittest.TextTestRunner(stream=output,verbosity=2,buffer=True).run(suite)
         if not result.wasSuccessful():print(output.getvalue());raise SystemExit(1)
         from demo import main as demo
-        with contextlib.redirect_stdout(io.StringIO()):demonstration=demo()
+        with contextlib.redirect_stdout(io.StringIO()):demonstration=demo(teams=1)
     assert not outside and provider.call_count==process.call_count==0
-    assert demonstration['mock_ticks']==60 and demonstration['synthetic_model_operations']==10
-    paths=[*sorted((ROOT/'sdk').rglob('*.py')),*sorted((ROOT/'api').glob('*.json')),ROOT/'api/build_spec.py',ROOT/'config/perception-policy.json',ROOT/'sdk/pyproject.toml',Path(__file__).resolve()]
+    assert demonstration['teams']==1 and demonstration['mock_ticks']==60 and demonstration['synthetic_model_operations']==5
+    paths=[*sorted((ROOT/'sdk').rglob('*.py')),*sorted((ROOT/'sdk/examples').glob('*.json')),*sorted((ROOT/'api').glob('*.json')),ROOT/'api/build_spec.py',ROOT/'config/perception-policy.json',ROOT/'config/delivery-scope.json',ROOT/'sdk/pyproject.toml',Path(__file__).resolve()]
     paths=[p for p in paths if '__pycache__' not in p.parts]
     report={'verifiedAt':datetime.now(timezone.utc).isoformat(),'status':'participant_protocol_mock_passed',
       'testsRun':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped),
       'openapiVersion':spec['openapi'],'endpointCount':7,'internalReferencesVerified':len(refs),
       'openapiExternalValidatorRun':False,'demo':demonstration,'nonLoopbackNetworkAttempts':0,'liveProviderCalls':0,'subprocessesStarted':0,
+      'deliveryScope':{'requiredLiveHarnesses':1,'eightTeamLoadTestRequired':False,'harnessReview':'organizer_manual_review'},
       'nativeMinecraftVerified':False,'humanViewCaptureVerified':False,'strictCertified':False,
       'sourceSha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},
       'limits':['Protocol mock only, no native capture/execution or real inference',
         'Restricted model-proposed configuration changes, not arbitrary code hot updates or storage isolation certification',
-        'No eight-team TPS or deterministic native replay certification',
+        'Single-Harness live game rehearsal is still pending; eight-team testing is not required for this delivery',
         'OpenAPI internal references checked; no external full spec validator was available']}
     (ROOT/'reports').mkdir(exist_ok=True)
     (ROOT/'reports/harness-api-validation-20261019.json').write_text(json.dumps(report,indent=2)+'\n')

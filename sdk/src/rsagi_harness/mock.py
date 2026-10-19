@@ -47,6 +47,7 @@ class MockArena:
         return {'mode':'protocol_mock','phase':'ABORTED' if self.aborted else ('FINISHED' if self.finished else 'COLLECTING'),'round_id':self.round_id,'logical_tick':self.logical_tick,
           'available_credits':state['credits'],'observation_ref':None if self.finished else state['observation_ref'],
           'harness_revision':state['revision'],'recommended_call_credits':policy['next_call_credits'],
+          'active_operation_id':state['operation'],
           'disposition':state['disposition'],'finished':self.finished}
 
     def _operation(self,team,operation_id):
@@ -134,7 +135,9 @@ class MockArena:
 
     def _compute(self,operation_id):
         with self.condition:
-            op=self.operations[operation_id];team=op['team'];round_id=op['round_id'];policy=deepcopy(self.revisions[op['parent_revision']])
+            op=self.operations[operation_id]
+            if self.closed or self.aborted or op['status']!='PENDING':return
+            team=op['team'];round_id=op['round_id'];policy=deepcopy(self.revisions[op['parent_revision']])
             self.provider_calls+=1
         try:
             time.sleep(self.model_delay)
@@ -147,7 +150,7 @@ class MockArena:
         except ProtocolError:failure='MODEL_OUTPUT_REJECTED'
         except Exception:failure='HOST_FIXTURE_FAULT'
         with self.condition:
-            if self.closed:return
+            if self.closed or op['status']!='PENDING':return
             state=self.teams[team]
             require(state['operation']==operation_id and self.round_id==round_id,'MOCK_INTERNAL_OPERATION_MISMATCH',500)
             op['usage']={'kind':'synthetic_mock','input_tokens':0,'output_tokens':0 if failure else 32,'reasoning_tokens':0}
@@ -155,7 +158,12 @@ class MockArena:
                 op['status']='FAILED';op['error']=failure
                 # This is a host disposition, never a participant bypass or retry.
                 state['disposition']='READY';state['committed_action']={'type':'WAIT'}
-                if failure=='HOST_FIXTURE_FAULT':self.finished=True;self.aborted=True
+                if failure=='HOST_FIXTURE_FAULT':
+                    self.finished=True;self.aborted=True
+                    for pending in self.operations.values():
+                        if pending['status']=='PENDING':
+                            pending['status']='FAILED';pending['error']='MATCH_ABORTED'
+                            self.teams[pending['team']]['disposition']='READY'
             else:
                 op['status']='SUCCEEDED';op['receipt_id']=opaque('receipt')
                 state['receipt']=op['receipt_id'];state['disposition']='DECIDED'
@@ -194,6 +202,8 @@ class MockServer:
                 try:
                     team=arena.authenticate(self.headers.get('Authorization'))
                     url=urllib.parse.urlsplit(self.path);require(not url.query and not url.fragment,'INVALID_QUERY')
+                    if url.path!='/v1/session':
+                        require(self.headers.get('X-RSAGI-Match')==arena.match_id,'MATCH_MISMATCH',409)
                     body=None
                     if method=='POST':
                         require(self.headers.get('Content-Type','').split(';')[0].strip()=='application/json','JSON_REQUIRED',415)

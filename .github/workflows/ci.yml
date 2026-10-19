@@ -19,7 +19,7 @@ jobs:
         run: |
           python3 api/build_spec.py
           git diff --exit-code -- api/
-      - name: Verify participant protocol and two-team demo
+      - name: Verify one-Harness preflight and recovery regressions
         run: python3 scripts/verify_harness_api.py
       - name: Build participant source package
         run: python3 scripts/package_harness_sdk.py

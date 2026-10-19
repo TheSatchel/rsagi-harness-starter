@@ -1,14 +1,16 @@
-# 参赛 Harness 接入方案与 Starter v0.1
+# 参赛 Harness 接入方案与 Starter v0.2
 
 当前交付为**可运行的协议原型**：HTTP API、Python SDK、最小 Harness、两队模拟服务端和接入测试。它没有连接 Minecraft、真实图像/声音或模型网关，不授予正式比赛能力。原有内核管理员 API 继续保持私有，不能直接发给参赛队。
 
-第一版优先解决高中生和高校学生都能复现的接入体验：解压后一条命令运行两队演示，不需要 Minecraft 账号、模型密钥、Docker 或第三方 Python 运行库。
+2026-10-19 用户确认：当前只要求一份真实 Harness 的完整试跑，不将八队压测作为前置；Harness 算法、记忆和运行中改动由主办方人工审核。平台交付参赛接入规范、可靠模板、协议与故障处置，见 [队伍接入规范](TEAM_INTEGRATION.md) 和 `config/delivery-scope.json`。
+
+第一版优先解决高中生和高校学生都能复现的接入体验：解压后一条命令运行单 Harness 演示，不需要 Minecraft 账号、模型密钥、Docker 或第三方 Python 运行库。
 
 ```sh
 python3 sdk/examples/demo.py
 ```
 
-输出必须注明 `protocol_mock`。预期两队共完成 12 个屏障、60 个模拟 tick、10 个合成模型操作和 2 次模型提议的配置调整。`native_minecraft / real_model / human_view_capture / strict_certified` 均为 false。这不是 AI 生存成绩，也不是 20 TPS 或严格同步认证。
+输出必须注明 `protocol_mock`。默认一份 Harness 完成 12 个屏障、60 个模拟 tick、5 个合成模型操作和 1 次模型提议的配置调整。`native_minecraft / real_model / human_view_capture / strict_certified` 均为 false。可选 `--teams 2` 仅用于屏障回归，不是八队验收要求。Mock 成功不能代替最终配置上的单 Harness 真实游戏试跑。
 
 ## 1. 正式接入应采用的边界
 
@@ -32,7 +34,7 @@ flowchart LR
 
 ## 2. 七个接入端点
 
-接口文件为 `api/openapi.json`，当前版本 `0.1.0`；所有端点需要 `Authorization: Bearer <team-token>`。没有对外上线的正式 API 地址。公开生产环境必须使用 HTTPS，本地 Mock 仅绑定回环地址。
+接口文件为 `api/openapi.json`，当前版本 `0.2.0`；所有端点需要 `Authorization: Bearer <team-token>`，除 session 外还必须有 `X-RSAGI-Match`。SDK 从 `RSAGI_MATCH_ID` 锁定本局，不会自动加入重启后的另一局。没有对外上线的正式 API 地址。公开生产环境必须使用 HTTPS，本地 Mock 仅绑定回环地址。
 
 | 方法与路径 | 用途 | 边界 |
 | --- | --- | --- |
@@ -75,6 +77,8 @@ flowchart LR
 
 SDK 只轮询已有操作，并逐步退避至每 250 ms 查询一次；等待轮界和模型的默认客户端期限为 180 秒，覆盖当前上限 16×10 秒的模型预算。它不是裁判截止时间，正式参数改变时须同步配置。生产端的 round 查询应读取已发布的不可变缓存，不让每次轮询回到游戏主线程；可在保持字段语义的前提下补充有界长轮询。
 
+v0.2 的 SDK 对传输失败最多重试两次，复用同一比赛、幂等键和请求体；明确的协议拒绝不重试。`round.active_operation_id` 支持控制器重新启动后接着查询原模型操作。标准 `run_harness()` 按 OPEN/PENDING/DECIDED/READY 恢复，不重复调用模型或应用已激活修订；已全局停赛后的迟到回复不能再生成可执行票据。
+
 ## 4. 模型动作接口
 
 `api/model-decision.schema.json` 是交给模型的输出协议，与 Harness 的 HTTP 请求分开。每次动作有简短 `evidence / reason / expected`，不索取隐藏思维链。
@@ -95,31 +99,20 @@ SDK 只轮询已有操作，并逐步退避至每 250 ms 查询一次；等待�
 
 ## 5. 最小 Harness 与运行中自组织
 
-核心循环见 `sdk/examples/baseline.py`。它只保留轮次、余额、操作/观察/修订句柄，不建世界状态表：
+入口见 `sdk/examples/baseline.py`。队伍推荐复用 `run_harness()` 的网络与状态处理，它只保留轮次、余额、操作/观察/修订句柄，不建世界状态表：
 
 ```python
-round_info = client.next_round(after=last_round)
-target = round_info["recommended_call_credits"]
-if round_info["available_credits"] < target:
-    client.wait(round_info, request_id=f"wait-round-{round_info['round_id']}")
-else:
-    operation = client.decide(round_info, target,
-        request_id=f"decide-round-{round_info['round_id']}")
-    result = client.await_decision(operation["operation_id"])
-    if result["status"] == "SUCCEEDED":
-        if result["proposed_revision_id"] is not None:
-            client.activate(round_info, result["receipt_id"],
-                result["proposed_revision_id"],
-                request_id=f"activate-round-{round_info['round_id']}")
-        client.ready(round_info, result["receipt_id"],
-            request_id=f"ready-round-{round_info['round_id']}")
+from rsagi_harness import CompetitionClient, run_harness
+
+client = CompetitionClient.from_env()
+run_harness(client)
 ```
 
 本地演示首先积攒四份，由模拟模型提出把内部角色从 `actor` 改为 `observer + actor`，后续调用目标改为两份。主办方登记来源操作、父修订、不可变新修订及激活记录。后续角色配置和预算选择发生变化，但仍只有每轮一次调用；角色数不能换来额外模型或 token 配额。真实队伍可在提交模板中设计角色职责，内部组织改变必须来自已计量模型输出。
 
-v0.1 只演示受限配置自组织，不执行任意 Python/Java 热更新，也不宣称这是已完成的自修改研究基线。以后若开放模型生成的源码修订，需要主办方保存每个差异及来源、验证权限、原子切换并记录失败处置。
+当前 SDK 只演示受限配置自组织，不执行任意 Python/Java 热更新。参赛 Harness 可以提交自身运行中改动的实现及边界，由主办方审核；这不是要求主办方先实现自动源码合规证明器。
 
-“能改代码”和“禁止外部语义记忆”之间存在实质边界：程序可以把坐标编码进常量、分支或注释。JSON Schema、禁用文件写入或 SDK 本身都无法证明任意程序没有这样做。必须限制改动面、审核模型原始输出和版本差异、隔离外部网络/语义存储，并把违规判定与申诉写进规程。运行器和完整审计尚未实现。
+禁 RAG、外部语义笔记和传统规划器的规则不变，其内容合规由主办方人工审核。平台只验证请求结构、身份、配额、轮次和动作票据，避免把“自动识别任意代码中的语义存储”扩大成当前交付前置。公开接口也不授予后台真值或管理员权限。
 
 对已使用其他框架的队伍，迁移清单是：将模型调用替换为官方 `decide`，移除自建记忆与直接游戏工具，把控制逻辑接到 round/wait/receipt/revision 回调；先通过本地合同测试，再申请在线训练。SDK 不会自动让已有框架合规。
 
@@ -129,7 +122,7 @@ v0.1 只演示受限配置自组织，不执行任意 Python/Java 热更新，�
 
 世界读写、玩家动作及裁判事件则由主办方游戏适配器在 Minecraft 主线程处理，通过有界队列与后台服务交接。全队屏障使用模拟门控，不能用主线程 sleep 等模型，也不能直接从异步线程操作世界。[Paper 调度说明](https://docs.papermc.io/paper/dev/scheduler/)
 
-本仓库只有协议 Mock，不包含游戏适配器或主办方后台代码，也没有主线程性能或八队 20 TPS 的验收。Mock 吞吐量不能替代真实服务器验证。
+本仓库只有协议 Mock，不包含游戏适配器或主办方后台代码。当前按一份真实 Harness 的最终配置试跑验收，不要求八队压测；Mock 吞吐量不能替代这次真实服务器运行。
 
 ## 7. 发布包与落地顺序
 
@@ -141,7 +134,7 @@ Starter 发布包应包含：版本化 OpenAPI 与模型动作 schema、Python S
 
 1. 发布并试用当前协议包，收集高中/大学团队接入问题，冻结 v1 的字段和错误语义。
 2. 完成可信原生客户端画面/声音与完整低层输入，将同一队伍 API 接到现有原生屏障、权威账本和模型网关；生产端不接受 Mock 或后台文本回退。
-3. 完成隔离运行器、模型生成硬额度、异步审计和全链故障处置，再做八队 20 TPS、同状态延迟重放及真实生存验收。
+3. 按主办方人工审核后的准入规则，使用最终服务器、模型和客户端配置完成一份真实 Harness 的运行与故障演练，检查逻辑时钟、配额、输入输出、计分及主线程耗时。八队压测和自动 Harness 合规认证不作为当前前置。
 
 验证与打包：
 

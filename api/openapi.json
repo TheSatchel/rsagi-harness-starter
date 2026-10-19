@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "RSAGI participant Harness API",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "PROTOCOL MOCK ONLY today. No live competition endpoint, native perception/execution or inference is connected. 512 tokens/10 seconds, 1280x720 are starter parameters, not frozen match rules."
   },
   "servers": [
@@ -195,7 +195,12 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MatchID"
+          }
+        ]
       }
     },
     "/v1/decisions": {
@@ -297,6 +302,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/MatchID"
           }
         ]
       }
@@ -396,6 +404,9 @@
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,128}$"
             }
+          },
+          {
+            "$ref": "#/components/parameters/MatchID"
           }
         ]
       }
@@ -499,6 +510,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/MatchID"
           }
         ]
       }
@@ -602,6 +616,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/MatchID"
           }
         ]
       }
@@ -705,6 +722,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/MatchID"
           }
         ]
       }
@@ -719,6 +739,16 @@
       }
     },
     "parameters": {
+      "MatchID": {
+        "in": "header",
+        "name": "X-RSAGI-Match",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
+        "description": "Bind every request to the session established at startup. Never auto-switch to a restarted/new match."
+      },
       "IdempotencyKey": {
         "in": "header",
         "name": "Idempotency-Key",
@@ -788,7 +818,7 @@
         "type": "object",
         "properties": {
           "api_version": {
-            "const": "0.1.0"
+            "const": "0.2.0"
           },
           "mode": {
             "enum": [
@@ -913,6 +943,17 @@
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$"
           },
+          "active_operation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "recommended_call_credits": {
             "type": "integer",
             "minimum": 1,
@@ -938,6 +979,7 @@
           "available_credits",
           "observation_ref",
           "harness_revision",
+          "active_operation_id",
           "recommended_call_credits",
           "disposition",
           "finished"

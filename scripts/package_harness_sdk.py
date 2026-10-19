@@ -2,16 +2,16 @@
 from pathlib import Path
 import hashlib,json,re,zipfile
 ROOT=Path(__file__).resolve().parents[1]
-NAME='rsagi-harness-starter-v0.1.0'
+NAME='rsagi-harness-starter-v0.2.0'
 def sha(data):return hashlib.sha256(data).hexdigest()
 def main():
     report=json.loads((ROOT/'reports/harness-api-validation-20261019.json').read_text())
-    assert report['status']=='participant_protocol_mock_passed' and report['testsRun']==17
+    assert report['status']=='participant_protocol_mock_passed' and report['testsRun']==30
     for key in ['failures','errors','skipped','nonLoopbackNetworkAttempts','liveProviderCalls','subprocessesStarted','strictCertified']:
         assert not report[key]
     for name,expected in report['sourceSha256'].items():assert sha((ROOT/name).read_bytes())==expected
-    paths=[*sorted((ROOT/'sdk').rglob('*.py')),*sorted((ROOT/'api').glob('*.json')),ROOT/'api/build_spec.py',
-      ROOT/'sdk/pyproject.toml',*sorted((ROOT/'docs').glob('*.md')),ROOT/'config/perception-policy.json',
+    paths=[*sorted((ROOT/'sdk').rglob('*.py')),*sorted((ROOT/'sdk/examples').glob('*.json')),*sorted((ROOT/'api').glob('*.json')),ROOT/'api/build_spec.py',
+      ROOT/'sdk/pyproject.toml',*sorted((ROOT/'docs').glob('*.md')),ROOT/'config/perception-policy.json',ROOT/'config/delivery-scope.json',
       ROOT/'scripts/verify_harness_api.py',Path(__file__).resolve(),ROOT/'README.md',ROOT/'LICENSE',
       ROOT/'CONTRIBUTING.md',ROOT/'CHANGELOG.md',ROOT/'.gitignore',ROOT/'.github/workflows/ci.yml']
     files={}

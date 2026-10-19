@@ -1,0 +1,20 @@
+{
+  "scope_version": 1,
+  "confirmed_date": "2026-10-19",
+  "primary_acceptance": "single_harness_end_to_end_with_final_match_configuration",
+  "required_live_harness_count": 1,
+  "eight_team_load_test_required": false,
+  "harness_algorithm_memory_and_self_modification_review": "organizer_manual_review",
+  "automated_semantic_code_review_required": false,
+  "platform_responsibilities": [
+    "participant_contract_and_reference_entrypoint",
+    "player_view_and_f3_perception_boundary",
+    "metered_calls_and_round_barrier",
+    "no_duplicate_charge_or_action_on_transport_retry",
+    "same_match_controller_restart_recovery",
+    "reject_cross_match_and_stale_requests",
+    "explicit_timeout_invalid_output_and_host_fault_disposition",
+    "one_harness_preflight_and_live_rehearsal"
+  ],
+  "current_evidence": "protocol_mock_only_live_player_capture_and_execution_pending"
+}

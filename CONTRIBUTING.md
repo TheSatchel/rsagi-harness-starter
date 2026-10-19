@@ -2,6 +2,8 @@
 
 先运行 `python3 sdk/examples/demo.py`，再运行 `python3 scripts/verify_harness_api.py`。
 
+当前默认只预检一份 Harness，算法/记忆/自修改审核由主办方负责。请按 [队伍接入规范](docs/TEAM_INTEGRATION.md) 使用 v0.2.0 的比赛 ID、状态恢复和启动入口，不把自动源码审查或八队压测扩大为本次前置。
+
 提交协议改动时，请同步更新 SDK、OpenAPI、动作 schema、示例和接入指南。生成协议后用 `git diff -- api/` 检查是否发生预期变化。保持新增字段封闭、队伍引用绑定、调用前扣费与幂等行为一致。
 
 请在 Issue 中描述 Python/系统版本、复现命令、预期与实际结果。真实队伍凭据、模型密钥、未公开赛题或服务端存档不属于公开问题附件。
