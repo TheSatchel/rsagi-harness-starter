@@ -76,6 +76,8 @@ class CompetitionClient:
         if self._session is None:
             value=self._request('GET','/v1/session')
             if value.get('api_version')!=API_VERSION:raise APIError(409,'UNSUPPORTED_API_VERSION')
+            from .control import control_settings
+            if value.get('character_control')!=control_settings():raise APIError(409,'UNSUPPORTED_CHARACTER_CONTROL')
             if value.get('mode')=='protocol_mock' and not self.allow_mock:raise APIError(409,'MOCK_REQUIRES_EXPLICIT_OPT_IN')
             if value.get('mode') not in ('protocol_mock','native_training','strict_competition'):raise APIError(409,'UNKNOWN_SERVER_MODE')
             if type(value.get('match_id')) is not str or not value['match_id']:raise APIError(502,'INVALID_SESSION')

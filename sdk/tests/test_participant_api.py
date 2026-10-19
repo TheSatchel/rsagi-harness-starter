@@ -146,6 +146,7 @@ class ParticipantAPITests(unittest.TestCase):
         self.beta.wait(self.beta.round(),request_id='beta-timeout-wait')
         self.assertEqual((self.arena.logical_tick,self.alpha.round()['available_credits']),(20,1))
         self.assertEqual(self.arena.provider_calls,1)
+        self.assertEqual(self.arena.steps[-1]['actions']['alpha'],{})
 
     def test_invalid_model_action_never_becomes_a_receipt(self):
         def invalid(*args):return {'action':{'type':'NAVIGATE_TO','x':10,'z':20},'explanation':{'evidence':'fixture','reason':'fixture','expected':'fixture'}}
@@ -153,6 +154,7 @@ class ParticipantAPITests(unittest.TestCase):
         accepted=self.alpha.decide(r,1,request_id='invalid-model-decision')
         result=self.alpha.await_decision(accepted['operation_id'])
         self.assertEqual((result['status'],result['error'],result['receipt_id']),('FAILED','MODEL_OUTPUT_REJECTED',None))
+        self.assertEqual(self.arena.teams['alpha']['committed_action'],{})
         self.assertEqual(self.alpha.round()['available_credits'],0)
         self.assertEqual(self.arena.logical_tick,0)
 

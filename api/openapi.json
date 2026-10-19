@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "RSAGI participant Harness API",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "PROTOCOL MOCK ONLY today. No live competition endpoint, native perception/execution or inference is connected. 512 tokens/10 seconds, 1280x720 are starter parameters, not frozen match rules."
   },
   "servers": [
@@ -414,7 +414,7 @@
     "/v1/wait": {
       "post": {
         "operationId": "waitAndBank",
-        "description": "Zero-call, neutral-input ready; preserve quota. Global step occurs only after all teams resolve.",
+        "description": "Zero-call ready; preserve quota. Only the unexpired ticks of an already authorized input may continue. No new action. Global step occurs only after all teams resolve.",
         "responses": {
           "200": {
             "description": "Success",
@@ -814,11 +814,43 @@
         ],
         "additionalProperties": false
       },
+      "CharacterControl": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "const": "compact_vel3_v1"
+          },
+          "auto_jump": {
+            "const": true
+          },
+          "turn_degrees_per_logical_second": {
+            "const": 180
+          },
+          "default_action_ticks": {
+            "const": 5
+          },
+          "max_action_ticks": {
+            "const": 80
+          },
+          "hotbar_first_slot": {
+            "const": 1
+          }
+        },
+        "required": [
+          "profile",
+          "auto_jump",
+          "turn_degrees_per_logical_second",
+          "default_action_ticks",
+          "max_action_ticks",
+          "hotbar_first_slot"
+        ],
+        "additionalProperties": false
+      },
       "Session": {
         "type": "object",
         "properties": {
           "api_version": {
-            "const": "0.2.0"
+            "const": "0.3.0"
           },
           "mode": {
             "enum": [
@@ -875,6 +907,9 @@
             ],
             "additionalProperties": false
           },
+          "character_control": {
+            "$ref": "#/components/schemas/CharacterControl"
+          },
           "capabilities": {
             "$ref": "#/components/schemas/Capabilities"
           }
@@ -893,6 +928,7 @@
           "max_model_calls_per_round",
           "f3_allowed",
           "screen",
+          "character_control",
           "capabilities"
         ],
         "additionalProperties": false
@@ -1239,70 +1275,108 @@
               {
                 "type": "object",
                 "properties": {
+                  "vel": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "prefixItems": [
+                      {
+                        "type": "number",
+                        "minimum": -1,
+                        "maximum": 1
+                      },
+                      {
+                        "type": "number",
+                        "minimum": -1,
+                        "maximum": 1
+                      },
+                      {
+                        "type": "number",
+                        "minimum": -1,
+                        "maximum": 1
+                      }
+                    ],
+                    "items": false,
+                    "description": "[forward, right, turn] local input strengths. Positive=forward/right/clockwise. Translation clamped to unit length. turn=1 means +180 degrees per logical second, applied at +9 degrees per native tick.",
+                    "default": [
+                      0,
+                      0,
+                      0
+                    ]
+                  },
+                  "look": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "prefixItems": [
+                      {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      }
+                    ],
+                    "items": false,
+                    "description": "Relative degrees [yaw, pitch], +right/+down. Applied once before continuous vel turning. Native pitch clamps to [-90,90].",
+                    "default": [
+                      0,
+                      0
+                    ]
+                  },
+                  "do": {
+                    "enum": [
+                      "none",
+                      "mine",
+                      "attack",
+                      "use",
+                      "hold_use"
+                    ],
+                    "default": "none",
+                    "description": "At the current crosshair: hold mine, tap attack/use, or hold use. No target selection."
+                  },
+                  "ticks": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 80,
+                    "default": 5,
+                    "description": "Logical client ticks only; zero wall-clock progress during inference."
+                  },
+                  "slot": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9,
+                    "description": "Visible hotbar key 1..9."
+                  },
+                  "mode": {
+                    "enum": [
+                      "walk",
+                      "sprint",
+                      "sneak"
+                    ],
+                    "default": "walk"
+                  },
+                  "jump": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Optional explicit jump/swim input; vanilla auto-jump is enabled uniformly."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Compact character control; missing fields reset to defaults, {} stops prior input. Not a world velocity setter or planner."
+              },
+              {
+                "type": "object",
+                "properties": {
                   "type": {
                     "const": "WAIT"
                   }
                 },
                 "required": [
                   "type"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "const": "INPUT"
-                  },
-                  "keys": {
-                    "type": "array",
-                    "maxItems": 10,
-                    "uniqueItems": true,
-                    "items": {
-                      "enum": [
-                        "forward",
-                        "back",
-                        "left",
-                        "right",
-                        "jump",
-                        "sneak",
-                        "sprint",
-                        "attack",
-                        "use",
-                        "drop"
-                      ]
-                    }
-                  },
-                  "look_delta": {
-                    "type": "object",
-                    "properties": {
-                      "yaw": {
-                        "type": "number",
-                        "minimum": -180,
-                        "maximum": 180
-                      },
-                      "pitch": {
-                        "type": "number",
-                        "minimum": -90,
-                        "maximum": 90
-                      }
-                    },
-                    "required": [
-                      "yaw",
-                      "pitch"
-                    ],
-                    "additionalProperties": false
-                  },
-                  "hotbar": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 8
-                  }
-                },
-                "required": [
-                  "type",
-                  "keys",
-                  "look_delta"
                 ],
                 "additionalProperties": false
               },
@@ -1382,6 +1456,12 @@
               }
             ]
           },
+          "why": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "pattern": "\\S"
+          },
           "explanation": {
             "type": "object",
             "properties": {
@@ -1449,10 +1529,31 @@
           }
         },
         "required": [
-          "action",
-          "explanation"
+          "action"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "why"
+            ],
+            "not": {
+              "required": [
+                "explanation"
+              ]
+            }
+          },
+          {
+            "required": [
+              "explanation"
+            ],
+            "not": {
+              "required": [
+                "why"
+              ]
+            }
+          }
+        ]
       }
     }
   },

@@ -1,5 +1,5 @@
 {
-  "scope_version": 1,
+  "scope_version": 2,
   "confirmed_date": "2026-10-19",
   "primary_acceptance": "single_harness_end_to_end_with_final_match_configuration",
   "required_live_harness_count": 1,
@@ -16,5 +16,9 @@
     "explicit_timeout_invalid_output_and_host_fault_disposition",
     "one_harness_preflight_and_live_rehearsal"
   ],
-  "current_evidence": "protocol_mock_only_live_player_capture_and_execution_pending"
+  "current_evidence": "protocol_mock_only_live_player_capture_and_execution_pending",
+  "normal_match_end_condition": "native_ender_dragon_death",
+  "normal_match_tick_limit": null,
+  "character_control": "vel_forward_right_turn_v0.3.0",
+  "auto_jump_enabled": true
 }

@@ -8,6 +8,7 @@ from copy import deepcopy
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 import hashlib,hmac,json,re,secrets,threading,time,urllib.parse
 from .protocol import API_VERSION,PERCEPTION_POLICY,ProtocolError,identifier,integer,require,shape,validate_model_decision
+from .control import control_settings
 
 def opaque(prefix):return prefix+'_'+secrets.token_hex(16)
 
@@ -76,7 +77,7 @@ class MockArena:
                     return 200,{'api_version':API_VERSION,'mode':'protocol_mock','match_id':self.match_id,'team_id':team,
                       'perception_policy':PERCEPTION_POLICY,'ticks_per_round':5,'rounds_per_logical_second':4,
                       'credit_cap':16,'tokens_per_credit':512,'seconds_per_credit':10,'max_model_calls_per_round':1,
-                      'f3_allowed':True,'screen':{'width':1280,'height':720},
+                      'f3_allowed':True,'screen':{'width':1280,'height':720},'character_control':control_settings(),
                       'capabilities':{'human_view_capture':False,'native_game_execution':False,'real_model':False,
                         'self_organization_config':True,'arbitrary_code_hot_update':False,'strict_certified':False}}
                 if path=='/v1/round':return 200,self._round(team)
@@ -157,7 +158,8 @@ class MockArena:
             if failure:
                 op['status']='FAILED';op['error']=failure
                 # This is a host disposition, never a participant bypass or retry.
-                state['disposition']='READY';state['committed_action']={'type':'WAIT'}
+                state['disposition']='READY';state['committed_action']={}
+                self.audit.append({'type':'HOST_RELEASE_INPUT','team':team,'round':round_id,'reason':failure})
                 if failure=='HOST_FIXTURE_FAULT':
                     self.finished=True;self.aborted=True
                     for pending in self.operations.values():

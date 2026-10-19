@@ -4,6 +4,7 @@ import json,sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'sdk/src'))
 from rsagi_harness.protocol import API_VERSION,action_schema
+from rsagi_harness.control import control_settings
 
 def obj(properties,required=None):
     return {'type':'object','properties':properties,'required':list(properties) if required is None else required,'additionalProperties':False}
@@ -18,10 +19,11 @@ def build():
     schemas={
       'Error':obj({'error':obj({'code':{'type':'string'}})}),
       'Capabilities':obj({key:{'type':'boolean'} for key in ['human_view_capture','native_game_execution','real_model','self_organization_config','arbitrary_code_hot_update','strict_certified']}),
+      'CharacterControl':obj({key:{'const':value} for key,value in control_settings().items()}),
       'Session':obj({'api_version':{'const':API_VERSION},'mode':mode,'match_id':identifier,'team_id':identifier,
         'perception_policy':{'const':'rsagi-human-player-view-v1'},'ticks_per_round':{'const':5},'rounds_per_logical_second':{'const':4},
         'credit_cap':{'const':16},'tokens_per_credit':{'const':512},'seconds_per_credit':{'const':10},'max_model_calls_per_round':{'const':1},
-        'f3_allowed':{'const':True},'screen':obj({'width':{'const':1280},'height':{'const':720}}),'capabilities':ref('Capabilities')}),
+        'f3_allowed':{'const':True},'screen':obj({'width':{'const':1280},'height':{'const':720}}),'character_control':ref('CharacterControl'),'capabilities':ref('Capabilities')}),
       'Round':obj({'mode':mode,'phase':{'enum':['COLLECTING','FINISHED','ABORTED']},'round_id':{'type':'integer','minimum':1},'logical_tick':integer,
         'available_credits':{'type':'integer','minimum':0,'maximum':16},'observation_ref':nullable_id,'harness_revision':identifier,
         'active_operation_id':nullable_id,
@@ -51,7 +53,7 @@ def build():
       '/v1/round':{'get':operation('getRound','Own released boundary only; repeated reads never produce more world information. No other teams or world state.','Round')},
       '/v1/decisions':{'post':operation('createDecision','Atomically pre-charge one call. Host supplies bound perception and original context; request cannot contain prompts, images, history or actions.','Accepted','DecideRequest','202')},
       '/v1/decisions/{operation_id}':{'get':operation('getDecision','Poll an owned operation. Receipt and mechanical usage only; no world-semantic output returned to the controller.','Decision',parameters=[{'in':'path','name':'operation_id','required':True,'schema':identifier}])},
-      '/v1/wait':{'post':operation('waitAndBank','Zero-call, neutral-input ready; preserve quota. Global step occurs only after all teams resolve.','Acknowledgement','RoundRequest')},
+      '/v1/wait':{'post':operation('waitAndBank','Zero-call ready; preserve quota. Only the unexpired ticks of an already authorized input may continue. No new action. Global step occurs only after all teams resolve.','Acknowledgement','RoundRequest')},
       '/v1/ready':{'post':operation('commitDecision','Commit exactly the host-held model action using an owned round-bound receipt. No client-authored action payload.','Acknowledgement','ReadyRequest')},
       '/v1/harness/activate':{'post':operation('activateModelProposedPolicy','Activate only a configuration revision produced by that model operation. No arbitrary source upload or world notes.','Acknowledgement','ActivateRequest')}
     }

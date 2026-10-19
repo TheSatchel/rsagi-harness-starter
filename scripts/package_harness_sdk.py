@@ -2,11 +2,11 @@
 from pathlib import Path
 import hashlib,json,re,zipfile
 ROOT=Path(__file__).resolve().parents[1]
-NAME='rsagi-harness-starter-v0.2.0'
+NAME='rsagi-harness-starter-v0.3.0'
 def sha(data):return hashlib.sha256(data).hexdigest()
 def main():
     report=json.loads((ROOT/'reports/harness-api-validation-20261019.json').read_text())
-    assert report['status']=='participant_protocol_mock_passed' and report['testsRun']==30
+    assert report['status']=='participant_protocol_mock_passed' and report['testsRun']==40
     for key in ['failures','errors','skipped','nonLoopbackNetworkAttempts','liveProviderCalls','subprocessesStarted','strictCertified']:
         assert not report[key]
     for name,expected in report['sourceSha256'].items():assert sha((ROOT/name).read_bytes())==expected
