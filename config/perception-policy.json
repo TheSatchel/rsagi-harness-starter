@@ -1,0 +1,49 @@
+{
+  "policy_id": "rsagi-human-player-view-v1",
+  "effective_date": "2026-10-19",
+  "information_basis": "what the bound human player can see or hear through the same permitted client",
+  "world_information_sources": [
+    "bound_player_first_person_render",
+    "currently_visible_game_gui",
+    "ordinary_client_mixed_game_audio"
+  ],
+  "non_world_information_sources": [
+    "published_rules_and_task",
+    "public_round_and_quota_controls"
+  ],
+  "structured_world_state_allowed": false,
+  "raw_client_packets_to_model_allowed": false,
+  "organizer_probe_to_model_allowed": false,
+  "host_world_semantic_description_allowed": false,
+  "coordinates": {
+    "structured_feed_allowed": false,
+    "read_only_from_permitted_visible_ui": true,
+    "debug_ui_permission": "vanilla_f3_allowed_rendered_screen_only"
+  },
+  "debug_ui": {
+    "vanilla_f3_allowed": true,
+    "settings_uniform_for_all_teams": true,
+    "information_source": "actual_rendered_f3_screen",
+    "structured_export_allowed": false,
+    "toggle_requires_official_game_input": true,
+    "extra_observation_during_thinking_allowed": false
+  },
+  "capture": {
+    "player_binding_required": true,
+    "publish_at_completed_round_boundary_only": true,
+    "new_world_observation_during_thinking_allowed": false,
+    "offscreen_entity_or_block_lists_allowed": false,
+    "semantic_ocr_or_sound_annotation_by_host_allowed": false
+  },
+  "requires_uniform_client_settings": [
+    "resolution", "field_of_view", "view_distance", "brightness",
+    "resource_pack", "gui_scale", "debug_ui", "subtitles", "audio_settings"
+  ],
+  "implementation": {
+    "human_view_capture_connected": false,
+    "participant_model_input": "reject_until_trusted_capture_is_connected_and_verified",
+    "diagnostic_text_requires_explicit_host_opt_in": true,
+    "diagnostic_text_is_competition_observation": false,
+    "formal_match_certified": false
+  }
+}

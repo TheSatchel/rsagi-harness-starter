@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rsagi-harness-sdk"
+version = "0.1.0"
+description = "RSAGI participant protocol starter; local mock, not a competition runtime"
+requires-python = ">=3.9"
+dependencies = []
+license = {text = "MIT"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.urls]
+Homepage = "https://github.com/TheSatchel/rsagi-harness-starter"
+Documentation = "https://github.com/TheSatchel/rsagi-harness-starter/blob/main/docs/HARNESS_API.md"
+Issues = "https://github.com/TheSatchel/rsagi-harness-starter/issues"
