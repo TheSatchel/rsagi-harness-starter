@@ -1,11 +1,11 @@
 {
   "policy_id": "rsagi-human-player-view-v1",
-  "effective_date": "2026-10-19",
+  "effective_date": "2026-10-24",
   "information_basis": "what the bound human player can see or hear through the same permitted client",
   "world_information_sources": [
     "bound_player_first_person_render",
     "currently_visible_game_gui",
-    "ordinary_client_mixed_game_audio"
+    "bound_player_native_subtitle_text"
   ],
   "non_world_information_sources": [
     "published_rules_and_task",
@@ -36,14 +36,41 @@
     "semantic_ocr_or_sound_annotation_by_host_allowed": false
   },
   "requires_uniform_client_settings": [
-    "resolution", "field_of_view", "view_distance", "brightness",
-    "resource_pack", "gui_scale", "debug_ui", "subtitles", "audio_settings"
+    "resolution",
+    "field_of_view",
+    "view_distance",
+    "brightness",
+    "resource_pack",
+    "gui_scale",
+    "debug_ui",
+    "subtitles",
+    "audio_settings"
   ],
   "implementation": {
     "human_view_capture_connected": false,
     "participant_model_input": "reject_until_trusted_capture_is_connected_and_verified",
     "diagnostic_text_requires_explicit_host_opt_in": true,
     "diagnostic_text_is_competition_observation": false,
-    "formal_match_certified": false
+    "formal_match_certified": false,
+    "native_vision_trial_evidence": "reports/native-control-20261019/real-model.json",
+    "subtitle_capture_evidence": "reports/native-sound-text-20261024/result.json",
+    "native_sound_text_connected": true
+  },
+  "sound_observation": {
+    "mode": "native_subtitle_text_v1",
+    "native_subtitle_processing_enabled": true,
+    "subtitle_pixels_in_image": false,
+    "all_teams_same_setting": true,
+    "exact_native_ui_text_to_model": true,
+    "raw_audio_to_model": false,
+    "structured_sound_events_to_model": false,
+    "source_coordinates_distances_ids_to_model": false,
+    "host_transcription_or_sound_summary": false,
+    "direction_from": "native_UI_arrow_glyph_only",
+    "clipped_native_UI_rows_exported": false,
+    "publication": "same_completed_round_capture_as_image",
+    "lifetime_clock": "logical_game_ticks",
+    "host_playback": "null_output_no_hardware_fallback",
+    "authorized_exception": "user_requested_exact_native_subtitle_text_2026-10-24"
   }
 }
