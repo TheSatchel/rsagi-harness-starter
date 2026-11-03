@@ -2,12 +2,12 @@
 
 此 Mod 用于手动启动的 Minecraft 26.3 客户端。进入世界后，Harness 或测试机通过带令牌认证的 HTTP 接口连接客户端，提交低层输入，推进客户端 tick，并读取实际 GPU 渲染画面及原版字幕文字。
 
-下载：[客户端 Mod v0.1.0](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/client-mod-v0.1.0)。该发布附带 JAR、SHA-256 和模组源码包。
+下载：[客户端 v0.1.1](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/client-mod-v0.1.1)。修复正常重开后的截图冲突及非法输入残留。
 
 ## 安装与启动
 
 1. 在你使用的启动器中准备 Minecraft **26.3**、Fabric Loader **0.19.5 或更高版本**以及 **Java 25**。
-2. 将下载的 `rsagi-client-26.3-0.1.0.jar` 放入该实例游戏目录的 `mods/`。
+2. 将构建产物 `mod/build/rsagi-client-26.3-0.1.1.jar` 放入该实例游戏目录的 `mods/`。
 3. 用启动器正常启动该实例。登录账号、选择服务器或进入世界均由使用者完成。
 4. 在日志中确认出现 `RSAGI_MOD_WAITING_FOR_CONNECTION`，然后读取该实例游戏目录下的 `config/rsagi/` 配置。
 5. 启动 Harness 或测试机连接流程，在玩家已进入世界后调用 `attach()`。

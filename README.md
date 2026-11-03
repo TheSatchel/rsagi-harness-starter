@@ -4,9 +4,11 @@
 
 面向高中生与高校学生团队的 Minecraft 具身智能比赛接入框架：API 协议、Python SDK、可恢复的最小 Harness、单 Harness 预检和合同测试。
 
-**当前服务端为 v0.2.0 单门旗舰训练版。** [下载完整训练包](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/server-mod-v0.2.0)：全新世界的要塞生成总数为 **1**，服务端核验唯一生成位置和原生门房。营地/入口保护、原生伤害与水晶贡献、反回血刷分、龙死亡封存和解释审核已迁入 Fabric。包含服务端与客户端 Mod、单门数据包及训练配置，见[安装说明](docs/SERVER_MOD.md)。实机规则检查与双端五 tick 屏障分别验证；正式认证保持关闭。
+**独立验收更新：服务端 0.2.1 + 客户端 0.1.1 已通过本地训练验收。** 公开下载包的问题已复现并修复；新验证包含同目录重开截图、一轮真实模型操作，以及同步开局到龙死亡结算。旧版本请升级，正式比赛认证仍关闭。
 
-**新增客户端 Mod 本地训练入口。** 使用普通启动器运行 Minecraft 26.3 + Fabric，安装 [RSAGI 客户端 Mod](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/client-mod-v0.1.0)，启动后等待 Harness／测试机认证连接。用 `ModClient` 接入真实游戏，见[安装与连接说明](docs/CLIENT_MOD.md)及 `sdk/examples/mod_connect.py`。本地直连不提供比赛计量或服务端同步认证。
+**当前服务端为 v0.2.1 单门旗舰训练版。** [下载完整训练包](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/server-mod-v0.2.1)：全新世界的要塞生成总数为 **1**，服务端核验唯一生成位置和原生门房。营地/入口保护、原生伤害与水晶贡献、反回血刷分、龙死亡封存和解释审核已迁入 Fabric。包含服务端与客户端 Mod、单门数据包及训练配置，见[安装说明](docs/SERVER_MOD.md)。实机规则检查与双端五 tick 屏障分别验证；正式认证保持关闭。
+
+**新增客户端 Mod 本地训练入口。** 使用普通启动器运行 Minecraft 26.3 + Fabric，安装 [RSAGI 客户端 Mod](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/client-mod-v0.1.1)，启动后等待 Harness／测试机认证连接。用 `ModClient` 接入真实游戏，见[安装与连接说明](docs/CLIENT_MOD.md)及 `sdk/examples/mod_connect.py`。本地直连不提供比赛计量或服务端同步认证。
 
 **比赛协议版本仍为 v0.3.0 原型。** `CompetitionClient` 和默认 demo 仍连接 Mock；本地 Mod 使用独立 `ModClient`，不把 Mock 作为真实运行。正式验收仍以一份真实 Harness 为规模，不要求八队压测。
 
