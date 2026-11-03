@@ -4,6 +4,8 @@
 
 面向高中生与高校学生团队的 Minecraft 具身智能比赛接入框架：API 协议、Python SDK、可恢复的最小 Harness、单 Harness 预检和合同测试。
 
+**新增服务端 Fabric Mod。** [服务端训练底座](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/server-mod-v0.1.0)配合客户端模组逐 tick 握手，已通过真实双模组三轮十五 tick、等待冻结及移动/转向落地测试。见[双端配置说明](docs/SERVER_MOD.md)。这是同步训练底座，旗舰地图保护与完整计分尚未迁完。
+
 **新增客户端 Mod 本地训练入口。** 使用普通启动器运行 Minecraft 26.3 + Fabric，安装 [RSAGI 客户端 Mod](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/client-mod-v0.1.0)，启动后等待 Harness／测试机认证连接。用 `ModClient` 接入真实游戏，见[安装与连接说明](docs/CLIENT_MOD.md)及 `sdk/examples/mod_connect.py`。本地直连不提供比赛计量或服务端同步认证。
 
 **比赛协议版本仍为 v0.3.0 原型。** `CompetitionClient` 和默认 demo 仍连接 Mock；本地 Mod 使用独立 `ModClient`，不把 Mock 作为真实运行。正式验收仍以一份真实 Harness 为规模，不要求八队压测。
