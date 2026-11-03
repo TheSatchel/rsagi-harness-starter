@@ -2,18 +2,44 @@
 
 用普通 Fabric 服务器启动，加载 RSAGI 服务端模组；玩家使用 RSAGI 客户端模组进入服务器，训练控制器连接模组。两端均不需要 Java agent 或 RSAGI 启动器。
 
-这是原生同步训练底座 v0.1.0。它已通过一名真实渲染玩家的双模组运行测试，尚未迁完 Paper 旗舰的地图保护与计分规则，不能作为正式旗舰服务器开赛。
+当前版本为 **v0.2.0 单门旗舰训练版**。旗舰地图验证、营地与入口保护、原生伤害归属、固定贡献计分、龙死亡封存和人工解释分已迁入 Fabric。
 
-下载：[服务端 Mod 训练底座 v0.1.0](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/server-mod-v0.1.0)。
+按 2026-11-03 最新规则，**全新主世界的自然要塞生成总数为 1，对应唯一一处末地入口**。配套数据包将原版 `minecraft:strongholds` 的 `count` 和 `spread` 都设为 1；服务端同时核验生效的生成配置、唯一生成位置和真实门房，不只登记一个保护标记。旧三门清单会被拒绝。已经生成过多个要塞的世界不能靠换数据包删掉旧建筑，必须用新版数据包新建世界。
+
+本版保留未认证训练标记。模型 token 计量与完整同步公平性仍独立验收。
+
+下载：[v0.2.0 单门旗舰训练包与源码](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/server-mod-v0.2.0)。推荐下载完整训练 ZIP；不要用旧三门世界覆盖安装。
 
 ## 安装
 
 1. 准备 Minecraft Java **26.3**、Java **25**、Fabric Loader **0.19.5 或更新版本**的专用服务器。
-2. 将 `rsagi-server-26.3-0.1.0.jar` 放入服务器 `mods/`，按 Fabric 原有方式启动服务器。Minecraft EULA 由服务器使用者自行阅读和接受。
+2. 推荐解压配套 `rsagi-flagship-fabric-26.3-v0.2.0.zip` 到全新的 Fabric 服务器目录：包含服务端 `mods/`、`world/datapacks/rsagi-flagship/` 和训练配置。数据包必须在世界首次生成前安装。按 Fabric 原有方式启动，Minecraft EULA 由使用者自行阅读和接受。
 3. 游戏客户端安装独立的 `rsagi-client-26.3-0.1.0.jar`，用自己的启动器和账号进入该服务器。
 4. 两端启动后分别生成 `config/rsagi-server/` 和 `config/rsagi/` 配置。路径相对于各自的游戏目录。
 
 Fabric 安装方式见[官方服务器安装说明](https://wiki.fabricmc.net/player:tutorials:install_server)。本模组不包含 Minecraft、Fabric 或其他第三方二进制。
+
+## 准备旗舰地图
+
+训练包的 `config/rsagi-server/runtime.properties` 已启用以下配置：
+
+```properties
+flagship.enabled=true
+flagship.border=2560
+flagship.teams=2
+flagship.training.allow-unpregenerated=true
+```
+
+`flagship.teams` 是预建营地数量，不是必须同时在线的队伍数；两营地地图也允许一份 Harness 试跑。主办方私有接口调用 `op=flagship&args=prepare` 后，地图分批生成和验证唯一要塞、门房通道、安全营地、下界要塞及十颗原始末地水晶。等 `status` 返回 `phase=READY`，再登记玩家并训练启动：
+
+```text
+op=flagship, args=register alpha 玩家UUID或在线名称
+op=flagship, args=training-start confirm
+```
+
+这些是表单字段示意，空格由 HTTP 表单正常编码。只有持有服务端令牌的本地训练控制器或主办方才能调用。
+
+本地模板明确允许未完成全部边界预生成的训练。清单会保留 `fullPregenComplete=false`，不提供完整 TPS 或正式公平性保证。不要手动把清单标记改为 true；没有预生成记录时，关闭该训练例外后会拒绝开局。
 
 ## 双端配对
 
@@ -65,13 +91,21 @@ client.token.file=/absolute/path/to/client/config/rsagi/token
 
 早期失败样例保留：地形加载未完成时过早接管，以及移动包 `PosRot` 子类匹配遗漏。测试现在等待加载完成，服务端按包基类解析原生处理方法。
 
-这些是指定配置下的证据。当前不认证任意第三方模组、Windows/Linux、全部隐藏信息发布路径、完整模型计量、完整旗舰保护与评分，以及有效世界恢复。原生末影龙死亡的结束挂钩已编写，其 Fabric 实机结算尚未在本报告验收。
+v0.2.0 另在全新单要塞世界中验证了：其他队营地破坏被拒、本队破坏允许、入口放块/盔甲架被拒、PvP 允许、其他队营地门可打开、敌方 TNT 点火被拒与本队 TNT 正常点火、十二次原版装眼可激活唯一入口、真实龙伤害与回血不刷分、环境水晶不冒认、实际床爆触发原生龙死亡及封存、人工解释分与重复审核拒绝。计分夹具有明确行政布置，包括创造模式操作和末段将自然战斗龙设为 1 HP，不代表模型从零完成生存。
+
+保护规则仅保留已确定的三条：其他队登记营地的方块、唯一末地入口设施，以及共同入口防封堵。PvP、容器物资转移、交易、联盟和聊天不另设禁令；营地没有私有交互或无敌权限。贡献分为 `60 × 新增历史最低血量伤害 / 200 + 20 × 初始水晶数 / 10`，另由主办方在结束后录入四项各 0–5 分的解释审核。
+
+`op=flagship` 的 `score` 只在结束后返回封存结果，`review alpha 5 4 3 4` 录入一次审核。原生龙死亡为正常结束；手动结束和中止分别标明原因。计分、保护、投眼与天气规则的原生适配以及生成时的自然刷怪权重配置都已入包；未把纯逻辑测试当成投眼或天气的实机统计结论。
+
+这些是指定配置下的证据。当前不认证任意第三方模组、Windows/Linux、全部隐藏信息发布路径、完整模型计量和有效世界恢复。正式 `start` 仍明确拒绝。
 
 ## 构建与复现
 
 ```sh
 python3 scripts/build_server_mod.py
-python3 scripts/fabric_pair_smoke.py
+python3 scripts/fabric_pair_smoke.py --server-version 0.2.0
+python3 scripts/fabric_flagship_prepare.py
+python3 scripts/fabric_flagship_rules_test.py
 ```
 
 源码构建需要 Java 25。`RSAGI_JAVA_BIN` 可以指定 Java 工具目录；`RSAGI_SERVER_BUNDLER` 指向官方 Minecraft 26.3 服务端分发 JAR。构建按分发包内摘要提取依赖，再应用并验证待发布 JAR 中的真实 Mixin 配置。

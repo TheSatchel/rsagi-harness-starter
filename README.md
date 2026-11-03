@@ -4,7 +4,7 @@
 
 面向高中生与高校学生团队的 Minecraft 具身智能比赛接入框架：API 协议、Python SDK、可恢复的最小 Harness、单 Harness 预检和合同测试。
 
-**新增服务端 Fabric Mod。** [服务端训练底座](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/server-mod-v0.1.0)配合客户端模组逐 tick 握手，已通过真实双模组三轮十五 tick、等待冻结及移动/转向落地测试。见[双端配置说明](docs/SERVER_MOD.md)。这是同步训练底座，旗舰地图保护与完整计分尚未迁完。
+**当前服务端为 v0.2.0 单门旗舰训练版。** [下载完整训练包](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/server-mod-v0.2.0)：全新世界的要塞生成总数为 **1**，服务端核验唯一生成位置和原生门房。营地/入口保护、原生伤害与水晶贡献、反回血刷分、龙死亡封存和解释审核已迁入 Fabric。包含服务端与客户端 Mod、单门数据包及训练配置，见[安装说明](docs/SERVER_MOD.md)。实机规则检查与双端五 tick 屏障分别验证；正式认证保持关闭。
 
 **新增客户端 Mod 本地训练入口。** 使用普通启动器运行 Minecraft 26.3 + Fabric，安装 [RSAGI 客户端 Mod](https://github.com/TheSatchel/rsagi-harness-starter/releases/tag/client-mod-v0.1.0)，启动后等待 Harness／测试机认证连接。用 `ModClient` 接入真实游戏，见[安装与连接说明](docs/CLIENT_MOD.md)及 `sdk/examples/mod_connect.py`。本地直连不提供比赛计量或服务端同步认证。
 
@@ -102,7 +102,7 @@ v0.2 对传输失败默认重试两次，但保留同一比赛标识、请求体
 
 支持：认证与队伍隔离的协议模拟、额度积攒、幂等请求、传输失败重试、控制进程恢复、比赛 ID 锁定、五 tick 屏障、紧凑三维控制 schema，以及有来源的角色/预算配置调整。
 
-尚未提供真实感知、完整原生动作执行和在线训练地址，因此仍需最终配置下一份真实 Harness 的游戏试跑。审核参赛算法、存储和自修改由主办方负责；平台不以自动源码合规证明或八队压测作为当前前置。配置自组织示例不等于任意源码热更新实现。
+比赛票据 API 尚未接入原生运行，主办方托管的正式训练地址尚未上线；本地真实游戏改用 ModClient 与 Fabric 双端模组，完整单 Harness 自然生存试跑仍待验收。审核参赛算法、存储和自修改由主办方负责；平台不以自动源码合规证明或八队压测作为当前前置。配置自组织示例不等于任意源码热更新实现。
 
 参赛 Harness 最终需要向主办方提交完整源码及运行中修订，并授权赛后公开到赛事 GitHub。这个 Starter 的 MIT 许可证与赛事报名时的源码授权要求分别适用；报名细则以之后公布的正式规程为准。
 
